@@ -29,3 +29,8 @@ Foque em mostrar a complexidade de espaco, como chegamos ao seu calculo e reseve
 Slide 17 - Conclusoes
 Se baseie no trabalho
 
+Exemplos de slide:
+![image](https://github.com/rafael-ventura/gpt-reader/assets/28628701/b6cf316a-78d6-4fa2-9cd2-f882eb6a8db0)
+![image](https://github.com/rafael-ventura/gpt-reader/assets/28628701/c00f99ce-bad9-4a46-bd52-64b0d9fb3d81)
+
+
