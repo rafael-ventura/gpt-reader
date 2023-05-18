@@ -244,30 +244,8 @@ Uma vantagem do algoritmo de Prim é que ele é mais fácil de implementar para 
 O algoritmo de Prim é uma ferramenta importante na teoria dos grafos e tem aplicações em muitos campos, como redes de computadores, circuitos elétricos e planejamento de rotas. Ele permite encontrar a árvore geradora mínima de um grafo conectado, proporcionando uma maneira eficiente de minimizar o peso total das arestas.
 
 
-Referências bibliográficas
 
-Cormen, T. H., Leiserson, C. E., Rivest, R. L., & Stein, C. (2009). Introduction to algorithms. MIT press. https://mitpress.mit.edu/books/introduction-algorithms-third-edition
-
-Prim's Algorithm - https://www.geeksforgeeks.org/prims-minimum-spanning-tree-mst-greedy-algo-5/
-
-Prim’s Minimum Spanning Tree Algorithm - https://www.tutorialspoint.com/design_and_analysis_of_algorithms/design_and_analysis_of_algorithms_prims_algorithm.htm
-
-Prim's Algorithm - https://brilliant.org/wiki/prims-algorithm/
-
-Graph Theory: Spanning Trees - https://www.cs.odu.edu/~toida/nerzic/390teched/graph/prim.html
-
-Aula 18 - Árvores Geradoras - http://www2.ic.uff.br/~sylvia/TEACH/inf1052/2016.2/aula18-AGM.pdf
-
-Minimum Spanning Tree: Prim’s Algorithm - https://algs4.cs.princeton.edu/lectures/43MinimumSpanningTrees.pdf
-
-Prim’s and Kruskal’s Algorithms - https://www.cse.ust.hk/~dekai/271/notes/L13/L13.pdf
-
-Análise de Algoritmos - Conteúdo adaptado de slides do Prof. Paulo Feofiloff e do Prof. José Coelho de Pina- https://www.ime.usp.br/~cris/aulas/07_2_338/slides/aula24.pdf
-
-Prim's algorithm - https://en.wikipedia.org/wiki/Prim%27s_algorithm
-
-
-Slides
+Estrutura dos Slides
 
 Slide 1 - Colocar o titulo do trabalho (Análise Algorítmica do problema da Árvore Geradora Mínima) e o nome dos integrantes (Elmo Sanches, Hernan Matiello, Rafael Cantanhede, Santiago Pacheco E Vitor Índio)
 
