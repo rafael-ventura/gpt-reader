@@ -1,287 +1,1768 @@
+chat baseado no meu arquivo de configuracao, monte o sql server script para criar essa tabela.
 
-Análise Algorítmica do problema da Árvore Geradora Mínima
+using System;
+using JJ.IP.IPS.Api.Application.v1.Contract.Enums;
+using JJ.IP.IPS.Api.Debt.Domain.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+namespace JJ.IP.IPS.Api.Infra.Data.Configurations;
 
+internal class OpCreditTransferConfiguration : IEntityTypeConfiguration<CtDebt>
+{
+    public void Configure(EntityTypeBuilder<CtDebt> creditTransfer)
+    {
+        creditTransfer.ToTable("TbJjIpIpsApi_OpCreditTransfer",
+            cfg => cfg.HasComment("Call to the Debit Payment Order API (Payer)."));
 
+        creditTransfer.HasKey(e => e.IdReqOpDebitoJdPi)
+            .HasName("PkJjIpIpsApi_OpCreditTransfer")
+            .IsClustered(false);
 
+        creditTransfer.Property(e => e.IdReqOpDebitoJdPi)
+            .HasComment("Identificador da requisição gerado pelo JJIP.")
+            .ValueGeneratedNever();
 
+        creditTransfer.Property(e => e.ChaveIdempotenciaSc)
+            .IsRequired()
+            .HasMaxLength(36)
+            .IsUnicode(false)
+            .HasComment("Chave de idempotência do Sistema Cliente.");
 
+        creditTransfer.Property(e => e.DtContabil)
+            .HasComment("Data contábil da 'Credit Transfer'");
 
+        creditTransfer.Property(e => e.DtHrLiquidacao)
+            .HasComment("Data hora de liquidação da 'Credit Transfer'");
 
+        creditTransfer.Property(e => e.DtHrRequisicao)
+            .HasComment("Data hora da requisição.");
 
+        creditTransfer.Property(e => e.IdEndToEnd)
+            .HasMaxLength(32)
+            .IsUnicode(false)
+            .HasComment("Identificador único da transação de 'Credit Transfer', gerado pelo PSP Debtor.");
 
-
-
-
-
-Grupo A4
-Elmo Sanches, Hernan Matiello, Rafael Cantanhede, Santiago Pacheco e Vitor Indio
-
-
-
-
-
-
-
-Introdução
-
-O Algoritmo de Prim é um algoritmo que pertence à teoria dos grafos e é usado para encontrar uma árvore geradora mínima em um grafo conexo com pesos. Uma árvore geradora mínima de um grafo é uma árvore que conecta todos os vértices do grafo e tem o menor peso total possível, ou seja, a soma dos pesos de todas as arestas da árvore é a menor possível.
-
-Explicação do problema
-
-A árvore geradora mínima de um grafo é uma subárvore que conecta todos os vértices do grafo e tem o menor peso total possível. O problema é encontrar essa árvore geradora mínima. Esse problema é relevante em muitas aplicações da vida real, como a construção de redes de telecomunicações ou a distribuição de energia elétrica, onde se deseja conectar todos os pontos com o menor custo possível.
-
-
-
-Definição formal do problema
-
-Dado um grafo conexo e não-direcionado G = (V, E) com peso atribuído a cada aresta e , o problema é encontrar uma árvore geradora T de G tal que a soma dos pesos das arestas de T seja a menor possível.
-
-Entrada: Um grafo conexo e não direcionado G com um peso atribuído a cada aresta.
-Questão: Encontrar uma árvore geradora T de G tal que a soma dos pesos das arestas de T seja a menor possível.
-Saída: A árvore geradora mínima T de G.
-
-
-
-Exemplos de instâncias do problema
-
-Exemplo 1: 
-Um grafo com 5 vértices e as seguintes arestas e pesos: (A-B, 1), (A-C, 3), (B-C, 4), (B-D, 2), (C-D, 5), (C-E, 6), (D-E, 7).
-Exemplo 2: 
-Um grafo com 4 vértices e as seguintes arestas e pesos: (A-B, 5), (B-C, 10), (C-D, 5), (D-A, 10).
-Exemplo 3: 
-Um grafo com 3 vértices e as seguintes arestas e pesos: (A-B, 2), (B-C, 3), (C-A, 1).
-
-Algoritmo
-Descrição esquemática do algoritmo
-
-O Algoritmo de Prim opera por meio da construção progressiva da árvore geradora mínima, incluindo um vértice de cada vez. O processo tem início a partir de um vértice escolhido aleatoriamente, e prossegue sempre selecionando a aresta de menor peso que estabelece uma conexão entre um vértice já incorporado à árvore e um vértice que ainda não foi incluído.
-
-Descrição formal do algoritmo
-
-Começamos escolhendo um vértice, ou ponto, do nosso gráfico para ser o ponto de partida. Podemos escolher qualquer vértice que quisermos - é arbitrário.
-
-Em seguida, procuramos todas as arestas, ou linhas, que se conectam a esse vértice e escolhemos a de menor peso. O peso aqui pode representar muitas coisas diferentes dependendo do que o gráfico está modelando, mas você pode pensar nele como o custo ou a distância.
-
-Adicionamos essa aresta de menor peso à nossa "árvore", que é apenas o conjunto de vértices e arestas que escolhemos até agora.
-
-Agora, repetimos os passos 2 e 3, mas sempre considerando os vértices que já estão na nossa árvore. Continuamos fazendo isso até que todos os vértices estejam na árvore.
+        creditTransfer.Property(e => e.IdReqSc)
+            .IsRequired()
+            .HasMaxLength(36)
+            .IsUnicode(false)
+            .HasComment("Identificador da requisição gerado pelo Sistema Cliente.");
 
 
-Algoritmo em Javascript
+        // Mapeia os campos com tipos complexos
+        creditTransfer.OwnsOne(e => e.RequestDto, complexFields =>
+        {
+            complexFields.ToJson();
+
+            complexFields.Property(e => e.IdReqSistemaCliente)
+                .IsRequired()
+                .HasMaxLength(36);
+
+            complexFields.Property(e => e.SettlementMethod)
+                .IsRequired();
+
+            complexFields.Property(e => e.InstructionIdentification)
+                .IsRequired()
+                .HasMaxLength(35);
+
+            complexFields.Property(e => e.EndToEndIdentification)
+                .IsRequired()
+                .HasMaxLength(35);
+
+            complexFields.Property(e => e.Uetr);
+
+            complexFields.Property(e => e.ServiceLevelCode)
+                .HasMaxLength(4);
+
+            complexFields.Property(e => e.ServiceLevelProprietary)
+                .HasMaxLength(35);
+
+            complexFields.Property(e => e.LocalInstrument)
+                .HasMaxLength(35);
+
+            complexFields.Property(e => e.CategoryPurpose)
+                .HasMaxLength(4);
+
+            complexFields.Property(e => e.InterbankSettlementAmount)
+                .HasMaxLength(35);
+
+            complexFields.Property(e => e.InterbankSettlementDate);
+
+            complexFields.Property(e => e.ChargeBearer)
+                .HasMaxLength(4);
+
+            complexFields.Property(e => e.MemberIdentification)
+                .HasMaxLength(9);
+
+            complexFields.OwnsOne(x => x.UltimateDebtor, ultimateDebtor =>
+            {
+                ultimateDebtor.Property(x => x.Name)
+                    .HasMaxLength(140)
+                    .IsRequired();
+
+                ultimateDebtor.OwnsOne(x => x.PostalAddress, postalAdress =>
+                    {
+                        postalAdress.Property(x => x.Department)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.SubDepartment)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.StreetName)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.BuildingNumber)
+                            .HasMaxLength(16);
+
+                        postalAdress.Property(x => x.Floor)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.PostBox)
+                            .HasMaxLength(16);
+
+                        postalAdress.Property(x => x.Room)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.PostCode)
+                            .HasMaxLength(16)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.TownName)
+                            .HasMaxLength(35)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.TownLocationName)
+                            .HasMaxLength(35);
+
+                        postalAdress.Property(x => x.DistrictName)
+                            .HasMaxLength(35);
+
+                        postalAdress.Property(x => x.CountrySubDivision)
+                            .HasMaxLength(35)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.Country)
+                            .HasMaxLength(2)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.AddressLine)
+                            .HasMaxLength(70)
+                            .IsRequired();
+                    }
+                );
+
+                ultimateDebtor.OwnsOne(x => x.Identification, identification =>
+                    {
+                        identification.OwnsOne(x => x.OrganisationIdentification, organisationIdentification =>
+                            {
+                                organisationIdentification.Property(x => x.AnyBIC)
+                                    .HasMaxLength(11);
+
+                                organisationIdentification.Property(x => x.LEI)
+                                    .HasMaxLength(35);
+
+                                organisationIdentification.OwnsOne(x => x.Other, other =>
+                                    {
+                                        other.Property(x => x.Identification)
+                                            .HasMaxLength(35)
+                                            .IsRequired();
+
+                                        other.Property(x => x.SchemeNameCode)
+                                            .HasMaxLength(4);
+
+                                        other.Property(x => x.SchemeNameProprietary)
+                                            .HasMaxLength(35);
+
+                                        other.Property(x => x.Issuer)
+                                            .HasMaxLength(35);
+                                    }
+                                );
+                            }
+                        );
+
+                        identification.OwnsOne(x => x.PrivateIdentification, privateIdentification =>
+                            {
+                                privateIdentification.Property(x => x.BirthDate);
+
+                                privateIdentification.Property(x => x.ProvinceOfBirth)
+                                    .HasMaxLength(35);
+
+                                privateIdentification.Property(x => x.CityOfBirth)
+                                    .HasMaxLength(35)
+                                    .IsRequired();
+
+                                privateIdentification.Property(x => x.CountryOfBirth)
+                                    .HasMaxLength(35)
+                                    .IsRequired();
+
+                                privateIdentification.OwnsOne(x => x.Other, other =>
+                                    {
+                                        other.Property(x => x.Identification)
+                                            .HasMaxLength(35)
+                                            .IsRequired();
+
+                                        other.Property(x => x.SchemeNameCode)
+                                            .HasMaxLength(4);
+
+                                        other.Property(x => x.SchemeNameProprietary)
+                                            .HasMaxLength(35);
+
+                                        other.Property(x => x.Issuer)
+                                            .HasMaxLength(35);
+                                    }
+                                );
+                            }
+                        );
+                    }
+                );
+
+                ultimateDebtor.Property(x => x.CountryOfResidence)
+                    .HasMaxLength(2);
+            });
+
+            complexFields.OwnsOne(x => x.InitiatingParty, initiatingParty =>
+            {
+                initiatingParty.Property(x => x.Name)
+                    .HasMaxLength(140)
+                    .IsRequired();
+
+                initiatingParty.OwnsOne(x => x.PostalAddress, postalAdress =>
+                    {
+                        postalAdress.Property(x => x.Department)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.SubDepartment)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.StreetName)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.BuildingNumber)
+                            .HasMaxLength(16);
+
+                        postalAdress.Property(x => x.Floor)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.PostBox)
+                            .HasMaxLength(16);
+
+                        postalAdress.Property(x => x.Room)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.PostCode)
+                            .HasMaxLength(16)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.TownName)
+                            .HasMaxLength(35)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.TownLocationName)
+                            .HasMaxLength(35);
+
+                        postalAdress.Property(x => x.DistrictName)
+                            .HasMaxLength(35);
+
+                        postalAdress.Property(x => x.CountrySubDivision)
+                            .HasMaxLength(35)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.Country)
+                            .HasMaxLength(2)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.AddressLine)
+                            .HasMaxLength(70)
+                            .IsRequired();
+                    }
+                );
+
+                initiatingParty.OwnsOne(x => x.Identification, identification =>
+                    {
+                        identification.OwnsOne(x => x.OrganisationIdentification, organisationIdentification =>
+                            {
+                                organisationIdentification.Property(x => x.AnyBIC)
+                                    .HasMaxLength(11);
+
+                                organisationIdentification.Property(x => x.LEI)
+                                    .HasMaxLength(35);
+
+                                organisationIdentification.OwnsOne(x => x.Other, other =>
+                                    {
+                                        other.Property(x => x.Identification)
+                                            .HasMaxLength(35)
+                                            .IsRequired();
+
+                                        other.Property(x => x.SchemeNameCode)
+                                            .HasMaxLength(4);
+
+                                        other.Property(x => x.SchemeNameProprietary)
+                                            .HasMaxLength(35);
+
+                                        other.Property(x => x.Issuer)
+                                            .HasMaxLength(35);
+                                    }
+                                );
+                            }
+                        );
+
+                        identification.OwnsOne(x => x.PrivateIdentification, privateIdentification =>
+                            {
+                                privateIdentification.Property(x => x.BirthDate);
+
+                                privateIdentification.Property(x => x.ProvinceOfBirth)
+                                    .HasMaxLength(35);
+
+                                privateIdentification.Property(x => x.CityOfBirth)
+                                    .HasMaxLength(35)
+                                    .IsRequired();
+
+                                privateIdentification.Property(x => x.CountryOfBirth)
+                                    .HasMaxLength(35)
+                                    .IsRequired();
+
+                                privateIdentification.OwnsOne(x => x.Other, other =>
+                                    {
+                                        other.Property(x => x.Identification)
+                                            .HasMaxLength(35)
+                                            .IsRequired();
+
+                                        other.Property(x => x.SchemeNameCode)
+                                            .HasMaxLength(4);
+
+                                        other.Property(x => x.SchemeNameProprietary)
+                                            .HasMaxLength(35);
+
+                                        other.Property(x => x.Issuer)
+                                            .HasMaxLength(35);
+                                    }
+                                );
+                            }
+                        );
+                    }
+                );
+
+                initiatingParty.Property(x => x.CountryOfResidence)
+                    .HasMaxLength(2);
+            });
+
+            complexFields.OwnsOne(x => x.Debtor, debtor =>
+            {
+                debtor.Property(x => x.Name)
+                    .HasMaxLength(140)
+                    .IsRequired();
+
+                debtor.OwnsOne(x => x.PostalAddress, postalAdress =>
+                    {
+                        postalAdress.Property(x => x.Department)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.SubDepartment)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.StreetName)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.BuildingNumber)
+                            .HasMaxLength(16);
+
+                        postalAdress.Property(x => x.Floor)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.PostBox)
+                            .HasMaxLength(16);
+
+                        postalAdress.Property(x => x.Room)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.PostCode)
+                            .HasMaxLength(16)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.TownName)
+                            .HasMaxLength(35)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.TownLocationName)
+                            .HasMaxLength(35);
+
+                        postalAdress.Property(x => x.DistrictName)
+                            .HasMaxLength(35);
+
+                        postalAdress.Property(x => x.CountrySubDivision)
+                            .HasMaxLength(35)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.Country)
+                            .HasMaxLength(2)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.AddressLine)
+                            .HasMaxLength(70)
+                            .IsRequired();
+                    }
+                );
+
+                debtor.OwnsOne(x => x.Identification, identification =>
+                    {
+                        identification.OwnsOne(x => x.OrganisationIdentification, organisationIdentification =>
+                            {
+                                organisationIdentification.Property(x => x.AnyBIC)
+                                    .HasMaxLength(11);
+
+                                organisationIdentification.Property(x => x.LEI)
+                                    .HasMaxLength(35);
+
+                                organisationIdentification.OwnsOne(x => x.Other, other =>
+                                    {
+                                        other.Property(x => x.Identification)
+                                            .HasMaxLength(35)
+                                            .IsRequired();
+
+                                        other.Property(x => x.SchemeNameCode)
+                                            .HasMaxLength(4);
+
+                                        other.Property(x => x.SchemeNameProprietary)
+                                            .HasMaxLength(35);
+
+                                        other.Property(x => x.Issuer)
+                                            .HasMaxLength(35);
+                                    }
+                                );
+                            }
+                        );
+
+                        identification.OwnsOne(x => x.PrivateIdentification, privateIdentification =>
+                            {
+                                privateIdentification.Property(x => x.BirthDate);
+
+                                privateIdentification.Property(x => x.ProvinceOfBirth)
+                                    .HasMaxLength(35);
+
+                                privateIdentification.Property(x => x.CityOfBirth)
+                                    .HasMaxLength(35)
+                                    .IsRequired();
+
+                                privateIdentification.Property(x => x.CountryOfBirth)
+                                    .HasMaxLength(35)
+                                    .IsRequired();
+
+                                privateIdentification.OwnsOne(x => x.Other, other =>
+                                    {
+                                        other.Property(x => x.Identification)
+                                            .HasMaxLength(35)
+                                            .IsRequired();
+
+                                        other.Property(x => x.SchemeNameCode)
+                                            .HasMaxLength(4);
+
+                                        other.Property(x => x.SchemeNameProprietary)
+                                            .HasMaxLength(35);
+
+                                        other.Property(x => x.Issuer)
+                                            .HasMaxLength(35);
+                                    }
+                                );
+                            }
+                        );
+                    }
+                );
+
+                debtor.Property(x => x.CountryOfResidence)
+                    .HasMaxLength(2);
+            });
+
+            complexFields.OwnsOne((x => x.DebtorAccount), debtorAccount =>
+            {
+                debtorAccount.OwnsOne(x => x.Identification, identification =>
+                {
+                    identification.Property(x => x.IBAN)
+                        .HasMaxLength(34)
+                        .IsRequired();
+
+                    identification.Property(x => x.Identification)
+                        .HasMaxLength(34);
+                });
+
+                debtorAccount.OwnsOne(x => x.Type, type =>
+                {
+                    type.Property(x => x.Code)
+                        .HasMaxLength(35);
+
+                    type.Property(x => x.Proprietary)
+                        .HasMaxLength(35);
+                });
+
+                debtorAccount.OwnsOne(x => x.ProxyType, proxyType =>
+                {
+                    proxyType.Property(x => x.Code)
+                        .HasMaxLength(35);
+
+                    proxyType.Property(x => x.Proprietary)
+                        .HasMaxLength(35);
+                });
+
+                debtorAccount.Property(x => x.ProxyIdentification)
+                    .HasMaxLength(256)
+                    .IsRequired();
+
+            });
+
+            complexFields.OwnsOne((x => x.DebtorAgent), debtorAgent =>
+            {
+                debtorAgent.Property(x => x.BICFI)
+                    .HasMaxLength(11);
+
+                debtorAgent.Property(x => x.MemberIdentification)
+                    .HasMaxLength(9)
+                    .IsRequired();
+
+                debtorAgent.Property(x => x.LEI)
+                    .HasMaxLength(20);
+
+                debtorAgent.Property(x => x.Name)
+                    .HasMaxLength(140)
+                    .IsRequired();
+
+                debtorAgent.OwnsOne(x => x.PostalAddress, postalAdress =>
+                    {
+                        postalAdress.Property(x => x.Department)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.SubDepartment)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.StreetName)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.BuildingNumber)
+                            .HasMaxLength(16);
+
+                        postalAdress.Property(x => x.Floor)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.PostBox)
+                            .HasMaxLength(16);
+
+                        postalAdress.Property(x => x.Room)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.PostCode)
+                            .HasMaxLength(16)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.TownName)
+                            .HasMaxLength(35)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.TownLocationName)
+                            .HasMaxLength(35);
+
+                        postalAdress.Property(x => x.DistrictName)
+                            .HasMaxLength(35);
+
+                        postalAdress.Property(x => x.CountrySubDivision)
+                            .HasMaxLength(35)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.Country)
+                            .HasMaxLength(2)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.AddressLine)
+                            .HasMaxLength(70)
+                            .IsRequired();
+                    }
+                );
+
+            });
 
 
-/**
- * Implementação do algoritmo de Prim em JavaScript.
- *
- * @param {Object} grafo - O grafo onde o algoritmo de Prim será aplicado. Deve ser um objeto onde as chaves são os vértices e os valores são objetos que representam as arestas conectadas a cada vértice, com os pesos das arestas como valores.
- * @param {string} inicio - O vértice de onde o algoritmo de Prim deve começar.
- * @returns {Array} A árvore geradora mínima do grafo, representada como uma lista de arestas. Cada aresta é um array de três elementos: o vértice de origem, o vértice de destino e o peso da aresta.
- */
-function prim(grafo, inicio) {
-    // Inicializa a árvore geradora mínima como uma lista vazia.
-    const arvore = [];
+            complexFields.OwnsOne((x => x.CreditorAgent), creditorAgent =>
+            {
+                creditorAgent.Property(x => x.BICFI)
+                    .HasMaxLength(11);
+
+                creditorAgent.Property(x => x.MemberIdentification)
+                    .HasMaxLength(9)
+                    .IsRequired();
+
+                creditorAgent.Property(x => x.LEI)
+                    .HasMaxLength(20);
+
+                creditorAgent.Property(x => x.Name)
+                    .HasMaxLength(140)
+                    .IsRequired();
+
+                creditorAgent.OwnsOne(x => x.PostalAddress, postalAdress =>
+                    {
+                        postalAdress.Property(x => x.Department)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.SubDepartment)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.StreetName)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.BuildingNumber)
+                            .HasMaxLength(16);
+
+                        postalAdress.Property(x => x.Floor)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.PostBox)
+                            .HasMaxLength(16);
+
+                        postalAdress.Property(x => x.Room)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.PostCode)
+                            .HasMaxLength(16)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.TownName)
+                            .HasMaxLength(35)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.TownLocationName)
+                            .HasMaxLength(35);
+
+                        postalAdress.Property(x => x.DistrictName)
+                            .HasMaxLength(35);
+
+                        postalAdress.Property(x => x.CountrySubDivision)
+                            .HasMaxLength(35)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.Country)
+                            .HasMaxLength(2)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.AddressLine)
+                            .HasMaxLength(70)
+                            .IsRequired();
+                    }
+                );
+
+            });
+
+            complexFields.OwnsOne(x => x.Creditor, creditor =>
+            {
+                creditor.Property(x => x.Name)
+                    .HasMaxLength(140)
+                    .IsRequired();
+
+                creditor.OwnsOne(x => x.PostalAddress, postalAdress =>
+                    {
+                        postalAdress.Property(x => x.Department)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.SubDepartment)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.StreetName)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.BuildingNumber)
+                            .HasMaxLength(16);
+
+                        postalAdress.Property(x => x.Floor)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.PostBox)
+                            .HasMaxLength(16);
+
+                        postalAdress.Property(x => x.Room)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.PostCode)
+                            .HasMaxLength(16)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.TownName)
+                            .HasMaxLength(35)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.TownLocationName)
+                            .HasMaxLength(35);
+
+                        postalAdress.Property(x => x.DistrictName)
+                            .HasMaxLength(35);
+
+                        postalAdress.Property(x => x.CountrySubDivision)
+                            .HasMaxLength(35)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.Country)
+                            .HasMaxLength(2)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.AddressLine)
+                            .HasMaxLength(70)
+                            .IsRequired();
+                    }
+                );
+
+                creditor.OwnsOne(x => x.Identification, identification =>
+                    {
+                        identification.OwnsOne(x => x.OrganisationIdentification, organisationIdentification =>
+                            {
+                                organisationIdentification.Property(x => x.AnyBIC)
+                                    .HasMaxLength(11);
+
+                                organisationIdentification.Property(x => x.LEI)
+                                    .HasMaxLength(35);
+
+                                organisationIdentification.OwnsOne(x => x.Other, other =>
+                                    {
+                                        other.Property(x => x.Identification)
+                                            .HasMaxLength(35)
+                                            .IsRequired();
+
+                                        other.Property(x => x.SchemeNameCode)
+                                            .HasMaxLength(4);
+
+                                        other.Property(x => x.SchemeNameProprietary)
+                                            .HasMaxLength(35);
+
+                                        other.Property(x => x.Issuer)
+                                            .HasMaxLength(35);
+                                    }
+                                );
+                            }
+                        );
+
+                        identification.OwnsOne(x => x.PrivateIdentification, privateIdentification =>
+                            {
+                                privateIdentification.Property(x => x.BirthDate);
+
+                                privateIdentification.Property(x => x.ProvinceOfBirth)
+                                    .HasMaxLength(35);
+
+                                privateIdentification.Property(x => x.CityOfBirth)
+                                    .HasMaxLength(35)
+                                    .IsRequired();
+
+                                privateIdentification.Property(x => x.CountryOfBirth)
+                                    .HasMaxLength(35)
+                                    .IsRequired();
+
+                                privateIdentification.OwnsOne(x => x.Other, other =>
+                                    {
+                                        other.Property(x => x.Identification)
+                                            .HasMaxLength(35)
+                                            .IsRequired();
+
+                                        other.Property(x => x.SchemeNameCode)
+                                            .HasMaxLength(4);
+
+                                        other.Property(x => x.SchemeNameProprietary)
+                                            .HasMaxLength(35);
+
+                                        other.Property(x => x.Issuer)
+                                            .HasMaxLength(35);
+                                    }
+                                );
+                            }
+                        );
+                    }
+                );
+
+                creditor.Property(x => x.CountryOfResidence)
+                    .HasMaxLength(2);
+            });
+
+            complexFields.OwnsOne((x => x.CreditorAccount), creditorAccount =>
+            {
+                creditorAccount.OwnsOne(x => x.Identification, identification =>
+                {
+                    identification.Property(x => x.IBAN)
+                        .HasMaxLength(34)
+                        .IsRequired();
+
+                    identification.Property(x => x.Identification)
+                        .HasMaxLength(34);
+                });
+
+                creditorAccount.OwnsOne(x => x.Type, type =>
+                {
+                    type.Property(x => x.Code)
+                        .HasMaxLength(35);
+
+                    type.Property(x => x.Proprietary)
+                        .HasMaxLength(35);
+                });
+
+                creditorAccount.OwnsOne(x => x.ProxyType, proxyType =>
+                {
+                    proxyType.Property(x => x.Code)
+                        .HasMaxLength(35);
+
+                    proxyType.Property(x => x.Proprietary)
+                        .HasMaxLength(35);
+                });
+
+                creditorAccount.Property(x => x.ProxyIdentification)
+                    .HasMaxLength(256)
+                    .IsRequired();
+
+            });
+
+            complexFields.OwnsOne(x => x.UltimateCreditor, ultimateCreditor =>
+            {
+                ultimateCreditor.Property(x => x.Name)
+                    .HasMaxLength(140)
+                    .IsRequired();
+
+                ultimateCreditor.OwnsOne(x => x.PostalAddress, postalAdress =>
+                    {
+                        postalAdress.Property(x => x.Department)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.SubDepartment)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.StreetName)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.BuildingNumber)
+                            .HasMaxLength(16);
+
+                        postalAdress.Property(x => x.Floor)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.PostBox)
+                            .HasMaxLength(16);
+
+                        postalAdress.Property(x => x.Room)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.PostCode)
+                            .HasMaxLength(16)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.TownName)
+                            .HasMaxLength(35)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.TownLocationName)
+                            .HasMaxLength(35);
+
+                        postalAdress.Property(x => x.DistrictName)
+                            .HasMaxLength(35);
+
+                        postalAdress.Property(x => x.CountrySubDivision)
+                            .HasMaxLength(35)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.Country)
+                            .HasMaxLength(2)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.AddressLine)
+                            .HasMaxLength(70)
+                            .IsRequired();
+                    }
+                );
+
+                ultimateCreditor.OwnsOne(x => x.Identification, identification =>
+                    {
+                        identification.OwnsOne(x => x.OrganisationIdentification, organisationIdentification =>
+                            {
+                                organisationIdentification.Property(x => x.AnyBIC)
+                                    .HasMaxLength(11);
+
+                                organisationIdentification.Property(x => x.LEI)
+                                    .HasMaxLength(35);
+
+                                organisationIdentification.OwnsOne(x => x.Other, other =>
+                                    {
+                                        other.Property(x => x.Identification)
+                                            .HasMaxLength(35)
+                                            .IsRequired();
+
+                                        other.Property(x => x.SchemeNameCode)
+                                            .HasMaxLength(4);
+
+                                        other.Property(x => x.SchemeNameProprietary)
+                                            .HasMaxLength(35);
+
+                                        other.Property(x => x.Issuer)
+                                            .HasMaxLength(35);
+                                    }
+                                );
+                            }
+                        );
+
+                        identification.OwnsOne(x => x.PrivateIdentification, privateIdentification =>
+                            {
+                                privateIdentification.Property(x => x.BirthDate);
+
+                                privateIdentification.Property(x => x.ProvinceOfBirth)
+                                    .HasMaxLength(35);
+
+                                privateIdentification.Property(x => x.CityOfBirth)
+                                    .HasMaxLength(35)
+                                    .IsRequired();
+
+                                privateIdentification.Property(x => x.CountryOfBirth)
+                                    .HasMaxLength(35)
+                                    .IsRequired();
+
+                                privateIdentification.OwnsOne(x => x.Other, other =>
+                                    {
+                                        other.Property(x => x.Identification)
+                                            .HasMaxLength(35)
+                                            .IsRequired();
+
+                                        other.Property(x => x.SchemeNameCode)
+                                            .HasMaxLength(4);
+
+                                        other.Property(x => x.SchemeNameProprietary)
+                                            .HasMaxLength(35);
+
+                                        other.Property(x => x.Issuer)
+                                            .HasMaxLength(35);
+                                    }
+                                );
+                            }
+                        );
+                    }
+                );
+
+                ultimateCreditor.Property(x => x.CountryOfResidence)
+                    .HasMaxLength(2);
+            });
+
+            complexFields.Property(x => x.PurposeCode)
+                .HasMaxLength(4);
+
+            complexFields.Property(x => x.PurposeProprietary)
+                .HasMaxLength(35);
+
+            complexFields.OwnsOne(x => x.RelatedRemittanceInformation, relatedRemittanceInformation =>
+            {
+                relatedRemittanceInformation.Property(x => x.Identification)
+                    .HasMaxLength(35);
+
+                relatedRemittanceInformation.Property(x => x.Method);
+
+                relatedRemittanceInformation.Property(x => x.EletronicAddress)
+                    .HasMaxLength(2048);
+
+                relatedRemittanceInformation.Property(x => x.PostalAddressName)
+                    .HasMaxLength(140);
+
+                relatedRemittanceInformation.OwnsOne(x => x.PostalAdress, postalAdress =>
+                    {
+                        postalAdress.Property(x => x.Department)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.SubDepartment)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.StreetName)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.BuildingNumber)
+                            .HasMaxLength(16);
+
+                        postalAdress.Property(x => x.Floor)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.PostBox)
+                            .HasMaxLength(16);
+
+                        postalAdress.Property(x => x.Room)
+                            .HasMaxLength(70);
+
+                        postalAdress.Property(x => x.PostCode)
+                            .HasMaxLength(16)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.TownName)
+                            .HasMaxLength(35)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.TownLocationName)
+                            .HasMaxLength(35);
+
+                        postalAdress.Property(x => x.DistrictName)
+                            .HasMaxLength(35);
+
+                        postalAdress.Property(x => x.CountrySubDivision)
+                            .HasMaxLength(35)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.Country)
+                            .HasMaxLength(2)
+                            .IsRequired();
+
+                        postalAdress.Property(x => x.AddressLine)
+                            .HasMaxLength(70)
+                            .IsRequired();
+                    }
+                );
+
+            });
+
+            complexFields.OwnsOne(x => x.RemittanceInformation, remittanceInformation =>
+            {
+                remittanceInformation.Property(x => x.Unstructured)
+                    .HasMaxLength(140);
+
+                remittanceInformation.OwnsOne(x => x.ReferredDocumentInformation, referredDocumentInformation =>
+                {
+                    referredDocumentInformation.OwnsOne(x => x.Type, type =>
+                    {
+                        type.Property(x => x.TypeCode)
+                            .HasMaxLength(35);
+
+                        type.Property(x => x.TypeProprietary)
+                            .HasMaxLength(35);
+
+                        type.Property(x => x.Issuer)
+                            .HasMaxLength(35);
+                    });
+
+                    referredDocumentInformation.Property(x => x.Number)
+                        .HasMaxLength(35);
+
+                    referredDocumentInformation.Property(x => x.RelatedDate);
+
+                    referredDocumentInformation.OwnsMany(x => x.LineDetails, lineDetails =>
+                    {
+                        lineDetails.OwnsMany(x => x.Identifications, identifications =>
+                        {
+
+                            identifications.OwnsOne(x => x.Type, type =>
+                            {
+                                type.Property(x => x.TypeCode);
+
+                                type.Property(x => x.TypeProprietary)
+                                    .HasMaxLength(35);
+
+                                type.Property(x => x.Issuer)
+                                    .HasMaxLength(35);
+                            });
+
+                            identifications.Property(x => x.Number)
+                                .HasMaxLength(35);
+
+                            identifications.Property(x => x.RelatedDate)
+                                .HasMaxLength(35);
+                        });
+
+                        lineDetails.Property(x => x.Description)
+                            .HasMaxLength(2048);
+
+                        lineDetails.OwnsOne(x => x.Amount, amount =>
+                        {
+                            amount.Property(x => x.DuePayableAmount);
+
+                            amount.OwnsMany(x => x.DiscountAppliedAmountType, discountAppliedAmountType =>
+                            {
+                                discountAppliedAmountType.Property(x => x.Code);
+
+                                discountAppliedAmountType.Property(x => x.Proprietary)
+                                    .HasMaxLength(35);
+                            });
+
+                            amount.Property(x => x.DiscountAppliedAmountAmount);
+
+                            amount.Property(x => x.CreditNoteAmount);
+
+                            amount.Property(x => x.TaxAmountType);
+
+                            amount.Property(x => x.TaxAmountAmount);
+
+                            amount.Property(x => x.AdjustmentAmountAndReasonAmount);
+
+                            amount.Property(x => x.AdjustmentAmountAndReasonCreditDebitIndicator);
+
+                            amount.Property(x => x.AdjustmentAmountAndReasonReason);
+
+                            amount.Property(x => x.AdjustmentAmountAndReasonAdditionalInformation);
+
+                            amount.Property(x => x.RemittedAmount);
+
+                        });
+                    });
 
 
-    // Inicializa o conjunto de vértices visitados como um conjunto vazio.
-    const visitados = new Set();
+                });
+
+                remittanceInformation.OwnsOne(x => x.ReferredDocumentAmount, amount =>
+                {
+                    amount.Property(x => x.DuePayableAmount);
+
+                    amount.OwnsMany(x => x.DiscountAppliedAmountType, discountAppliedAmountType =>
+                    {
+                        discountAppliedAmountType.Property(x => x.Code);
+
+                        discountAppliedAmountType.Property(x => x.Proprietary)
+                            .HasMaxLength(35);
+                    });
+
+                    amount.Property(x => x.DiscountAppliedAmountAmount);
+
+                    amount.Property(x => x.CreditNoteAmount);
+
+                    amount.Property(x => x.TaxAmountType);
+
+                    amount.Property(x => x.TaxAmountAmount);
+
+                    amount.Property(x => x.AdjustmentAmountAndReasonAmount);
+
+                    amount.Property(x => x.AdjustmentAmountAndReasonCreditDebitIndicator);
+
+                    amount.Property(x => x.AdjustmentAmountAndReasonReason);
+
+                    amount.Property(x => x.AdjustmentAmountAndReasonAdditionalInformation);
+
+                    amount.Property(x => x.RemittedAmount);
+
+                });
+
+                remittanceInformation.OwnsOne(x => x.CreditorReferenceInformation, creditorReferenceInformation =>
+                {
+                    creditorReferenceInformation.Property(x => x.Proprietary)
+                        .HasMaxLength(35);
+
+                    creditorReferenceInformation.Property(x => x.Issuer)
+                        .HasMaxLength(35);
+
+                    creditorReferenceInformation.Property(x => x.Reference)
+                        .HasMaxLength(35);
+                });
+
+                remittanceInformation.OwnsOne(x => x.Invoicer, invoicer =>
+                {
+                    invoicer.Property(x => x.Name)
+                        .HasMaxLength(140);
+
+                    invoicer.Property(x => x.AddressTypeCode);
+
+                    invoicer.Property(x => x.AddressTypeIdentification);
+
+                    invoicer.Property(x => x.AddressTypeIssuer);
+
+                    invoicer.Property(x => x.AddressTypeSchemeName);
+
+                    invoicer.Property(x => x.AddressTypePostalAddress);
+
+                    invoicer.OwnsOne(x => x.Identification, identification =>
+                        {
+                            identification.OwnsOne(x => x.OrganisationIdentification, organisationIdentification =>
+                                {
+                                    organisationIdentification.Property(x => x.AnyBIC)
+                                        .HasMaxLength(11);
+
+                                    organisationIdentification.Property(x => x.LEI)
+                                        .HasMaxLength(35);
+
+                                    organisationIdentification.OwnsOne(x => x.Other, other =>
+                                        {
+                                            other.Property(x => x.Identification)
+                                                .HasMaxLength(35)
+                                                .IsRequired();
+
+                                            other.Property(x => x.SchemeNameCode)
+                                                .HasMaxLength(4);
+
+                                            other.Property(x => x.SchemeNameProprietary)
+                                                .HasMaxLength(35);
+
+                                            other.Property(x => x.Issuer)
+                                                .HasMaxLength(35);
+                                        }
+                                    );
+                                }
+                            );
+
+                            identification.OwnsOne(x => x.PrivateIdentification, privateIdentification =>
+                                {
+                                    privateIdentification.Property(x => x.BirthDate);
+
+                                    privateIdentification.Property(x => x.ProvinceOfBirth)
+                                        .HasMaxLength(35);
+
+                                    privateIdentification.Property(x => x.CityOfBirth)
+                                        .HasMaxLength(35)
+                                        .IsRequired();
+
+                                    privateIdentification.Property(x => x.CountryOfBirth)
+                                        .HasMaxLength(35)
+                                        .IsRequired();
+
+                                    privateIdentification.OwnsOne(x => x.Other, other =>
+                                        {
+                                            other.Property(x => x.Identification)
+                                                .HasMaxLength(35)
+                                                .IsRequired();
+
+                                            other.Property(x => x.SchemeNameCode)
+                                                .HasMaxLength(4);
+
+                                            other.Property(x => x.SchemeNameProprietary)
+                                                .HasMaxLength(35);
+
+                                            other.Property(x => x.Issuer)
+                                                .HasMaxLength(35);
+                                        }
+                                    );
+                                }
+                            );
+                        }
+                    );
+
+                    invoicer.OwnsOne(x => x.ContactDetails, contactDetails =>
+                    {
+                        contactDetails.Property(x => x.Name)
+                            .HasMaxLength(140);
+
+                        contactDetails.Property(x => x.PhoneNumber);
+
+                        contactDetails.Property(x => x.MobileNumber);
+
+                        contactDetails.Property(x => x.FaxNumber);
+
+                        contactDetails.Property(x => x.EmailAddress)
+                            .HasMaxLength(2048);
+
+                        contactDetails.Property(x => x.EmailPurpose)
+                            .HasMaxLength(35);
+
+                        contactDetails.Property(x => x.JobTitle)
+                            .HasMaxLength(35);
+
+                        contactDetails.Property(x => x.Responsability)
+                            .HasMaxLength(35);
+
+                        contactDetails.Property(x => x.Department)
+                            .HasMaxLength(35);
+
+                        contactDetails.Property(x => x.ChannelType)
+                            .HasMaxLength(4)
+                            .IsRequired();
+
+                        contactDetails.Property(x => x.Identification)
+                            .HasMaxLength(128);
+
+                        contactDetails.Property(x => x.PreferredMethod);
+                    });
+                });
+
+                remittanceInformation.OwnsOne(x => x.Invoicee, invoicee =>
+                {
+                    invoicee.Property(x => x.Name)
+                        .HasMaxLength(140);
+
+                    invoicee.Property(x => x.AddressTypeCode);
+
+                    invoicee.Property(x => x.AddressTypeIdentification);
+
+                    invoicee.Property(x => x.AddressTypeIssuer);
+
+                    invoicee.Property(x => x.AddressTypeSchemeName);
+
+                    invoicee.Property(x => x.AddressTypePostalAddress);
+
+                    invoicee.OwnsOne(x => x.Identification, identification =>
+                        {
+                            identification.OwnsOne(x => x.OrganisationIdentification, organisationIdentification =>
+                                {
+                                    organisationIdentification.Property(x => x.AnyBIC)
+                                        .HasMaxLength(11);
+
+                                    organisationIdentification.Property(x => x.LEI)
+                                        .HasMaxLength(35);
+
+                                    organisationIdentification.OwnsOne(x => x.Other, other =>
+                                        {
+                                            other.Property(x => x.Identification)
+                                                .HasMaxLength(35)
+                                                .IsRequired();
+
+                                            other.Property(x => x.SchemeNameCode)
+                                                .HasMaxLength(4);
+
+                                            other.Property(x => x.SchemeNameProprietary)
+                                                .HasMaxLength(35);
+
+                                            other.Property(x => x.Issuer)
+                                                .HasMaxLength(35);
+                                        }
+                                    );
+                                }
+                            );
+
+                            identification.OwnsOne(x => x.PrivateIdentification, privateIdentification =>
+                                {
+                                    privateIdentification.Property(x => x.BirthDate);
+
+                                    privateIdentification.Property(x => x.ProvinceOfBirth)
+                                        .HasMaxLength(35);
+
+                                    privateIdentification.Property(x => x.CityOfBirth)
+                                        .HasMaxLength(35)
+                                        .IsRequired();
+
+                                    privateIdentification.Property(x => x.CountryOfBirth)
+                                        .HasMaxLength(35)
+                                        .IsRequired();
+
+                                    privateIdentification.OwnsOne(x => x.Other, other =>
+                                        {
+                                            other.Property(x => x.Identification)
+                                                .HasMaxLength(35)
+                                                .IsRequired();
+
+                                            other.Property(x => x.SchemeNameCode)
+                                                .HasMaxLength(4);
+
+                                            other.Property(x => x.SchemeNameProprietary)
+                                                .HasMaxLength(35);
+
+                                            other.Property(x => x.Issuer)
+                                                .HasMaxLength(35);
+                                        }
+                                    );
+                                }
+                            );
+                        }
+                    );
+
+                    invoicee.OwnsOne(x => x.ContactDetails, contactDetails =>
+                    {
+                        contactDetails.Property(x => x.Name)
+                            .HasMaxLength(140);
+
+                        contactDetails.Property(x => x.PhoneNumber);
+
+                        contactDetails.Property(x => x.MobileNumber);
+
+                        contactDetails.Property(x => x.FaxNumber);
+
+                        contactDetails.Property(x => x.EmailAddress)
+                            .HasMaxLength(2048);
+
+                        contactDetails.Property(x => x.EmailPurpose)
+                            .HasMaxLength(35);
+
+                        contactDetails.Property(x => x.JobTitle)
+                            .HasMaxLength(35);
+
+                        contactDetails.Property(x => x.Responsability)
+                            .HasMaxLength(35);
+
+                        contactDetails.Property(x => x.Department)
+                            .HasMaxLength(35);
+
+                        contactDetails.Property(x => x.ChannelType)
+                            .HasMaxLength(4)
+                            .IsRequired();
+
+                        contactDetails.Property(x => x.Identification)
+                            .HasMaxLength(128);
+
+                        contactDetails.Property(x => x.PreferredMethod);
+                    });
+                });
+
+                remittanceInformation.OwnsOne(x => x.TaxRemittance, taxRemittance =>
+                {
+
+                    taxRemittance.OwnsOne(x => x.CreditorTax, creditorTax =>
+                    {
+                        creditorTax.Property(x => x.TaxIdentification)
+                            .HasMaxLength(35);
+
+                        creditorTax.Property(x => x.RegistrationIdentification)
+                            .HasMaxLength(35);
+
+                        creditorTax.Property(x => x.TaxType)
+                            .HasMaxLength(35);
+                    });
+
+                    taxRemittance.OwnsOne(x => x.DebtorTax, debtorTax =>
+                    {
+                        debtorTax.Property(x => x.TaxIdentification)
+                            .HasMaxLength(35);
+
+                        debtorTax.Property(x => x.RegistrationIdentification)
+                            .HasMaxLength(35);
+
+                        debtorTax.Property(x => x.TaxType)
+                            .HasMaxLength(35);
+                    });
+
+                    taxRemittance.Property(x => x.DebtorAuthorisationTitle)
+                        .HasMaxLength(35);
+
+                    taxRemittance.Property(x => x.DebtorAuthorisationName)
+                        .HasMaxLength(140);
+
+                    taxRemittance.OwnsOne(x => x.UltimateDebtorTax, ultimateDebtorTax =>
+                    {
+                        ultimateDebtorTax.Property(x => x.TaxIdentification)
+                            .HasMaxLength(35);
+
+                        ultimateDebtorTax.Property(x => x.RegistrationIdentification)
+                            .HasMaxLength(35);
+
+                        ultimateDebtorTax.Property(x => x.TaxType)
+                            .HasMaxLength(35);
+                    });
+
+                    taxRemittance.Property(x => x.UltimateDebtorAuthorisationTitle)
+                        .HasMaxLength(35);
+
+                    taxRemittance.Property(x => x.UltimateDebtorAuthorisationName)
+                        .HasMaxLength(140);
+
+                    taxRemittance.Property(x => x.AdministrationZone)
+                        .HasMaxLength(140);
+
+                    taxRemittance.Property(x => x.ReferenceNumber)
+                        .HasMaxLength(140);
+
+                    taxRemittance.Property(x => x.Method)
+                        .HasMaxLength(35);
+
+                    taxRemittance.Property(x => x.TotalTaxableBaseAmount);
+
+                    taxRemittance.Property(x => x.TotalTaxAmount);
+
+                    taxRemittance.Property(x => x.Date);
+
+                    taxRemittance.Property(x => x.SequenceNumber);
+
+                    taxRemittance.OwnsOne(x => x.Record, record =>
+                    {
+                        record.Property(x => x.Type)
+                            .HasMaxLength(35);
+
+                        record.Property(x => x.Category)
+                            .HasMaxLength(35);
+
+                        record.Property(x => x.CategoryDetails)
+                            .HasMaxLength(35);
+
+                        record.Property(x => x.DebtorStatus)
+                            .HasMaxLength(35);
+
+                        record.Property(x => x.CertificateIdentification)
+                            .HasMaxLength(35);
+
+                        record.Property(x => x.FormsCode)
+                            .HasMaxLength(35);
+
+                        record.OwnsOne(x => x.Period, period =>
+                        {
+                            period.Property(x => x.Year);
+
+                            period.Property(x => x.Type);
+
+                            period.Property(x => x.FromDate);
+
+                            period.Property(x => x.ToDate);
+                        });
+
+                        record.Property(x => x.Rate);
+
+                        record.Property(x => x.TaxableBaseAmount);
+
+                        record.Property(x => x.TotalAmount);
+
+                        record.OwnsOne(x => x.DetailsPeriod, detailsPeriod =>
+                        {
+                            detailsPeriod.Property(x => x.Year);
+
+                            detailsPeriod.Property(x => x.Type);
+
+                            detailsPeriod.Property(x => x.FromDate);
+
+                            detailsPeriod.Property(x => x.ToDate);
+
+                        });
+
+                        record.Property(x => x.DetailsAmount);
+
+                        record.Property(x => x.AdditionalInformation)
+                            .HasMaxLength(140);
+                    });
+
+                });
+
+                remittanceInformation.OwnsOne(x => x.GarnishmentRemittance, garnishmentRemittance =>
+                {
+                    garnishmentRemittance.OwnsOne(x => x.Type, type =>
+                    {
+                        type.Property(x => x.TypeCode);
+
+                        type.Property(x => x.TypeProprietary)
+                            .HasMaxLength(35);
+
+                        type.Property(x => x.Issuer)
+                            .HasMaxLength(35);
 
 
-    // Inicializa a lista de arestas como uma lista vazia.
-    let arestas = [];
+                    });
 
+                    garnishmentRemittance.OwnsOne(x => x.Garnishee, garnishee =>
+                    {
+                        garnishee.Property(x => x.Name)
+                            .HasMaxLength(140);
 
-    // Para cada vértice adjacente ao vértice inicial
-    for (let para in grafo[inicio]) {
-        // Obtemos o custo da aresta
-        let custo = grafo[inicio][para];
+                        garnishee.Property(x => x.AddressTypeCode);
 
+                        garnishee.Property(x => x.AddressTypeIdentification);
 
-        // Adicionamos a aresta na lista de arestas a serem processadas
-        arestas.push([custo, inicio, para]);
+                        garnishee.Property(x => x.AddressTypeIssuer);
+
+                        garnishee.Property(x => x.AddressTypeSchemeName);
+
+                        garnishee.Property(x => x.AddressTypePostalAddress);
+
+                        garnishee.OwnsOne(x => x.Identification, identification =>
+                            {
+                                identification.OwnsOne(x => x.OrganisationIdentification, organisationIdentification =>
+                                    {
+                                        organisationIdentification.Property(x => x.AnyBIC)
+                                            .HasMaxLength(11);
+
+                                        organisationIdentification.Property(x => x.LEI)
+                                            .HasMaxLength(35);
+
+                                        organisationIdentification.OwnsOne(x => x.Other, other =>
+                                            {
+                                                other.Property(x => x.Identification)
+                                                    .HasMaxLength(35)
+                                                    .IsRequired();
+
+                                                other.Property(x => x.SchemeNameCode)
+                                                    .HasMaxLength(4);
+
+                                                other.Property(x => x.SchemeNameProprietary)
+                                                    .HasMaxLength(35);
+
+                                                other.Property(x => x.Issuer)
+                                                    .HasMaxLength(35);
+                                            }
+                                        );
+                                    }
+                                );
+
+                                identification.OwnsOne(x => x.PrivateIdentification, privateIdentification =>
+                                    {
+                                        privateIdentification.Property(x => x.BirthDate);
+
+                                        privateIdentification.Property(x => x.ProvinceOfBirth)
+                                            .HasMaxLength(35);
+
+                                        privateIdentification.Property(x => x.CityOfBirth)
+                                            .HasMaxLength(35)
+                                            .IsRequired();
+
+                                        privateIdentification.Property(x => x.CountryOfBirth)
+                                            .HasMaxLength(35)
+                                            .IsRequired();
+
+                                        privateIdentification.OwnsOne(x => x.Other, other =>
+                                            {
+                                                other.Property(x => x.Identification)
+                                                    .HasMaxLength(35)
+                                                    .IsRequired();
+
+                                                other.Property(x => x.SchemeNameCode)
+                                                    .HasMaxLength(4);
+
+                                                other.Property(x => x.SchemeNameProprietary)
+                                                    .HasMaxLength(35);
+
+                                                other.Property(x => x.Issuer)
+                                                    .HasMaxLength(35);
+                                            }
+                                        );
+                                    }
+                                );
+                            }
+                        );
+
+                        garnishee.OwnsOne(x => x.ContactDetails, contactDetails =>
+                        {
+                            contactDetails.Property(x => x.Name)
+                                .HasMaxLength(140);
+
+                            contactDetails.Property(x => x.PhoneNumber);
+
+                            contactDetails.Property(x => x.MobileNumber);
+
+                            contactDetails.Property(x => x.FaxNumber);
+
+                            contactDetails.Property(x => x.EmailAddress)
+                                .HasMaxLength(2048);
+
+                            contactDetails.Property(x => x.EmailPurpose)
+                                .HasMaxLength(35);
+
+                            contactDetails.Property(x => x.JobTitle)
+                                .HasMaxLength(35);
+
+                            contactDetails.Property(x => x.Responsability)
+                                .HasMaxLength(35);
+
+                            contactDetails.Property(x => x.Department)
+                                .HasMaxLength(35);
+
+                            contactDetails.Property(x => x.ChannelType)
+                                .HasMaxLength(4)
+                                .IsRequired();
+
+                            contactDetails.Property(x => x.Identification)
+                                .HasMaxLength(128);
+
+                            contactDetails.Property(x => x.PreferredMethod);
+                        });
+                    });
+
+                    garnishmentRemittance.OwnsOne(x => x.GarnishmentAdministrator, garnishmentAdministrator =>
+                    {
+                        garnishmentAdministrator.Property(x => x.Name)
+                            .HasMaxLength(140);
+
+                        garnishmentAdministrator.Property(x => x.AddressTypeCode);
+
+                        garnishmentAdministrator.Property(x => x.AddressTypeIdentification);
+
+                        garnishmentAdministrator.Property(x => x.AddressTypeIssuer);
+
+                        garnishmentAdministrator.Property(x => x.AddressTypeSchemeName);
+
+                        garnishmentAdministrator.Property(x => x.AddressTypePostalAddress);
+
+                        garnishmentAdministrator.OwnsOne(x => x.Identification, identification =>
+                            {
+                                identification.OwnsOne(x => x.OrganisationIdentification, organisationIdentification =>
+                                    {
+                                        organisationIdentification.Property(x => x.AnyBIC)
+                                            .HasMaxLength(11);
+
+                                        organisationIdentification.Property(x => x.LEI)
+                                            .HasMaxLength(35);
+
+                                        organisationIdentification.OwnsOne(x => x.Other, other =>
+                                            {
+                                                other.Property(x => x.Identification)
+                                                    .HasMaxLength(35)
+                                                    .IsRequired();
+
+                                                other.Property(x => x.SchemeNameCode)
+                                                    .HasMaxLength(4);
+
+                                                other.Property(x => x.SchemeNameProprietary)
+                                                    .HasMaxLength(35);
+
+                                                other.Property(x => x.Issuer)
+                                                    .HasMaxLength(35);
+                                            }
+                                        );
+                                    }
+                                );
+
+                                identification.OwnsOne(x => x.PrivateIdentification, privateIdentification =>
+                                    {
+                                        privateIdentification.Property(x => x.BirthDate);
+
+                                        privateIdentification.Property(x => x.ProvinceOfBirth)
+                                            .HasMaxLength(35);
+
+                                        privateIdentification.Property(x => x.CityOfBirth)
+                                            .HasMaxLength(35)
+                                            .IsRequired();
+
+                                        privateIdentification.Property(x => x.CountryOfBirth)
+                                            .HasMaxLength(35)
+                                            .IsRequired();
+
+                                        privateIdentification.OwnsOne(x => x.Other, other =>
+                                            {
+                                                other.Property(x => x.Identification)
+                                                    .HasMaxLength(35)
+                                                    .IsRequired();
+
+                                                other.Property(x => x.SchemeNameCode)
+                                                    .HasMaxLength(4);
+
+                                                other.Property(x => x.SchemeNameProprietary)
+                                                    .HasMaxLength(35);
+
+                                                other.Property(x => x.Issuer)
+                                                    .HasMaxLength(35);
+                                            }
+                                        );
+                                    }
+                                );
+                            }
+                        );
+
+                        garnishmentAdministrator.OwnsOne(x => x.ContactDetails, contactDetails =>
+                        {
+                            contactDetails.Property(x => x.Name)
+                                .HasMaxLength(140);
+
+                            contactDetails.Property(x => x.PhoneNumber);
+
+                            contactDetails.Property(x => x.MobileNumber);
+
+                            contactDetails.Property(x => x.FaxNumber);
+
+                            contactDetails.Property(x => x.EmailAddress)
+                                .HasMaxLength(2048);
+
+                            contactDetails.Property(x => x.EmailPurpose)
+                                .HasMaxLength(35);
+
+                            contactDetails.Property(x => x.JobTitle)
+                                .HasMaxLength(35);
+
+                            contactDetails.Property(x => x.Responsability)
+                                .HasMaxLength(35);
+
+                            contactDetails.Property(x => x.Department)
+                                .HasMaxLength(35);
+
+                            contactDetails.Property(x => x.ChannelType)
+                                .HasMaxLength(4)
+                                .IsRequired();
+
+                            contactDetails.Property(x => x.Identification)
+                                .HasMaxLength(128);
+
+                            contactDetails.Property(x => x.PreferredMethod);
+                        });
+                    });
+
+                    garnishmentRemittance.Property(x => x.ReferenceNumber)
+                        .HasMaxLength(140);
+
+                    garnishmentRemittance.Property(x => x.Date);
+
+                    garnishmentRemittance.Property(x => x.RemittedAmount);
+
+                    garnishmentRemittance.Property(x => x.FamilyMedicalInsuranceIndicator);
+
+                    garnishmentRemittance.Property(x => x.EmployeeTerminationIndicator);
+
+                });
+
+            });
+        });
     }
-
-
-    while (arestas.length > 0) {
-        // Ordenamos as arestas para simular uma heap de mínimos
-        arestas.sort((a, b) => a[0] - b[0]);
-
-
-        // Extraímos a aresta de menor custo
-        const [custo, de, para] = arestas.shift();
-
-
-        // Se o vértice de destino da aresta não foi visitado ainda
-        if (!visitados.has(para)) {
-            // Marcamos o vértice como visitado
-            visitados.add(para);
-
-
-            // Adicionamos a aresta à árvore geradora mínima
-            arvore.push([de, para, custo]);
-
-
-            // Para cada vértice adjacente ao vértice que acabamos de visitar
-            for (let vizinho in grafo[para]) {
-                // Se o vértice adjacente não foi visitado ainda
-                if (!visitados.has(vizinho)) {
-                    // Obtemos o custo da aresta
-                    let custoVizinho = grafo[para][vizinho];
-
-
-                    // Adicionamos a aresta na lista de arestas a serem processadas
-                    arestas.push([custoVizinho, para, vizinho]);
-                }
-            }
-        }
-    }
-
-
-    // Retornamos a árvore geradora mínima
-    return arvore;
 }
 
-Exemplos da solução algorítmica
 
-Exemplo 1
-
-Vamos começar com um grafo contendo cinco vértices, representados pelas letras A, B, C, D e E. As arestas entre os vértices e seus respectivos pesos são dados da seguinte maneira:
-
-(A, B): peso 2
-(A, C): peso 3
-(B, C): peso 1
-(B, D): peso 1
-(C, D): peso 4
-(C, E): peso 5
-(D, E): peso 2
-
-
-Primeiro, vamos começar com o vértice A. Entre as arestas que saem do vértice A, a aresta (A, B) tem o menor peso, que é 2. Portanto, selecionamos essa aresta e adicionamos à nossa árvore em crescimento.
-
-Agora, temos dois vértices em nossa árvore, A e B. As arestas que saem desses vértices e que levam a vértices que ainda não estão em nossa árvore são (A, C), (B, C) e (B, D). Entre essas, a aresta (B, D) tem o menor peso, que é 1. Portanto, selecionamos essa aresta e a adicionamos à nossa árvore.
-
-Em seguida, temos três vértices em nossa árvore, A, B e D. As arestas que saem desses vértices e que levam a vértices que ainda não estão em nossa árvore são (A, C), (B, C), (D, E) e (C, D). Entre essas, a aresta (D, E) tem o menor peso, que é 2. Portanto, selecionamos essa aresta e a adicionamos à nossa árvore.
-
-Finalmente, temos quatro vértices em nossa árvore, A, B, D e E. As arestas que saem desses vértices e que levam a vértices que ainda não estão em nossa árvore são (A, C), (B, C) e (C, D). Entre essas, a aresta (B, C) tem o menor peso, que é 1. Portanto, selecionamos essa aresta e a adicionamos à nossa árvore.
-
-Agora, todos os vértices estão em nossa árvore e formamos uma árvore geradora mínima. As arestas na árvore geradora mínima são (A, B), (B, D), (D, E) e (B, C), e o peso total da árvore é 6.
-
-
-Portanto, a árvore geradora mínima para esse grafo é composta pelas arestas (A, B): peso 2, (B, D): peso 1, (D, E): peso 2 e (B, C): peso 1, com um peso total de 6.
-
-
-
-Exemplo 2
-
-Agora no segundo exemplo, veja a imagem do grafo a seguir:
-
-
-
-
-
-Temos 6 vértices, que resultará num resultado de 5 arestas para a árvore. 
-
-Primeiro passo é arbitrariamente escolher um vértice. Imagine que escolhemos o vértice 1.
-
-Depois seguindo o algoritmo, escolhemos o menor caminho, que é a aresta que liga até o vértice 2, com peso 2.
-
-Depois, escolhemos o menor caminho para um vértice que não está conectado, e este será o vértice 0.
-
-O próximo passo será do vértice 2 ao 3, com a aresta de valor 2.
-
-O penúltimo passo será do vértice 2 ao 5, com a aresta de valor 4(note que a aresta que liga o vértice 3 ao 5 também vale 4, então não importará qual o caminho seguir.
-
-E por último, o caminho a seguir será a aresta que liga o 5 ao 4, com valor 3.
-
-
-Note que o resultado final, a árvore geradora mínima, está sublinhada em laranja.
-
-Análise do algoritmo
-
-O algoritmo de Prim é um algoritmo guloso, o que significa que ele faz a escolha localmente ótima em cada etapa com a esperança de que essas escolhas locais levarão a uma solução globalmente ótima. O algoritmo começa com um vértice arbitrário e seleciona a aresta de menor peso conectada a ele. Em seguida, adiciona essa aresta à árvore e repete o processo para os vértices adjacentes, sempre escolhendo a aresta de menor peso que conecta um vértice dentro da árvore a um vértice fora da árvore.
-
-
-Complexidade de Tempo
-
-No caso do algoritmo de Prim, quando usamos uma estrutura de dados chamada "heap de Fibonacci", a complexidade do tempo é O(E log V). Aqui, E é o número de arestas e V é o número de vértices no gráfico. Então, basicamente, estamos dizendo que o tempo que leva para executar o algoritmo é proporcional ao número de arestas vezes o logaritmo do número de vértices.
-
-Inicialmente, criamos uma fila de prioridade com todos os vértices. Isso leva tempo proporcional ao número de vértices, ou O(V).
-
-Em seguida, temos um loop que continua até que todos os vértices estejam na nossa árvore. Em cada iteração do loop, removemos o vértice com o menor peso da fila de prioridade, o que leva tempo logarítmico, ou O(log V). Como a altura de uma heap é logarítmica no número de elementos (porque é uma árvore binária completa), a remoção do elemento mínimo de uma heap tem complexidade de tempo O(log V), onde V é o número de vértices do grafo.
-
-Após remover um vértice, atualizamos os pesos dos vértices adjacentes na fila de prioridade. Isso leva tempo proporcional ao número de arestas, ou O(E), e temos que fazer isso para cada vértice, então acabamos com O(E log V) para essa parte
-
-Portanto, somando tudo, obtemos uma complexidade de tempo total de O(V + E log V). Mas, uma vez que geralmente temos mais arestas do que vértices (pelo menos em gráficos conectados), simplificamos isso para O(E log V).
-
-
-
-Prova de corretude do algoritmo
-
-A corretude do algoritmo de Prim é baseada na propriedade de corte da árvore geradora mínima. Esta propriedade diz que para qualquer corte de um grafo ponderado e conectado, a aresta de menor peso que atravessa o corte está na árvore geradora mínima. O algoritmo de Prim opera construindo uma árvore geradora mínima, um vértice de cada vez, e em cada etapa escolhe a aresta de menor peso que liga a árvore parcialmente construída ao restante do grafo. Assim, a propriedade do corte é mantida em todas as etapas, o que nos permite concluir que o resultado final é de fato uma árvore geradora mínima.
-
-Base: Iniciamos com um vértice aleatório como a árvore geradora mínima parcial. Neste caso, a propriedade do corte é trivialmente verdadeira, pois não há corte para considerar.
-
-
-Passo de indução: Suponha que a propriedade do corte seja verdadeira para a árvore parcialmente construída. Quando adicionamos uma aresta, escolhemos a de menor peso que liga a árvore ao restante do grafo. Assim, a propriedade do corte é mantida.
-
-Portanto, a árvore final construída pelo algoritmo de Prim é uma árvore geradora mínima.
-Descrição Formal da Prova por Indução 
-
-Base: A árvore começa com um único vértice e sem arestas, portanto, é trivialmente uma AGM para o subgrafo induzido pelo vértice inicial.
-
-Passo de indução: Suponha que, após k passos, temos uma AGM parcial T para um subgrafo induzido pelos vértices V(T). Considere adicionar uma nova aresta e(v,u) ao conjunto T, onde v pertence a V(T) e u não pertence a V(T). Se e é a aresta de menor peso que conecta V(T) a um vértice fora de V(T), então T' = T U {e} também é uma AGM parcial.
-
-Para provar isso, suponha que T' não seja uma AGM parcial e exista outra árvore T'' que seja uma AGM parcial com peso menor que T'. Removendo a aresta e de T'', teríamos uma árvore geradora que contém T, o que significa que existe uma aresta e' que conecta V(T) a um vértice fora de V(T) e tem peso menor que e. Mas isso contradiz nossa suposição de que e é a aresta de menor peso conectando V(T) a um vértice fora de V(T). Portanto, T' deve ser uma AGM parcial.
-
-Conclusão e Discussões
-
-O algoritmo de Prim é eficiente para grafos densos, pois a complexidade do tempo é proporcional ao número de vértices. No entanto, para grafos esparsos, o algoritmo de Kruskal pode ser uma escolha melhor, pois sua complexidade de tempo é proporcional ao número de arestas.
-
-Além disso, o algoritmo de Prim só funciona para grafos conectados. Se o grafo não for conectado, o algoritmo falhará, pois não será capaz de alcançar todos os vértices.
-
-Uma vantagem do algoritmo de Prim é que ele é mais fácil de implementar para grafos representados como matrizes de adjacência em vez de listas de adjacência, ao contrário do algoritmo de Kruskal.
-
-O algoritmo de Prim é uma ferramenta importante na teoria dos grafos e tem aplicações em muitos campos, como redes de computadores, circuitos elétricos e planejamento de rotas. Ele permite encontrar a árvore geradora mínima de um grafo conectado, proporcionando uma maneira eficiente de minimizar o peso total das arestas.
-
-
-
-Estrutura dos Slides
-
-Slide 1 - Colocar o titulo do trabalho (Análise Algorítmica do problema da Árvore Geradora Mínima) e o nome dos integrantes (Elmo Sanches, Hernan Matiello, Rafael Cantanhede, Santiago Pacheco E Vitor Índio)
-
-Slide 2 - Qual problema da Árvore Geradora Mínima?
-(Slide somente com o titulo acim)
-
-Slide 3 - Explicação do problema
-Aqui eu quero que voce coloque um texto simples baseado no meu trabalho
-
-Slide 4 - Definição formal do problema
-Colocar texto baseado no trabalho
-
-Slide 5 - Exemplos de instâncias
- Colocar os exemplos da instancia
-
-Slide 6 - Descrição esquemática do algoritmo
-Baseie-se no trabalho
-
-Slide 7 - Descrição esquemática do algoritmo
-Baseie-se no trabalho
-
-Slide 8 - Algoritmo De Prim - Solução Algorítmica
-Colocar o Codigo de uma maneira enxuta e simples para que a gente possa mostrar. pode ser em pseudocodigo e tem que ser em pt-br
-
-Slide 9 a 12 - Solução Algorítmica
-Use esse slide para colocar a resolucao do exemplo mais simples envolvendo algoritmo de prim e usando os passos do trabalho
-
-Slide 13 a 16 - Complexidade do Algoritmo e prova
-Foque em mostrar a complexidade de espaco, como chegamos ao seu calculo e reseve o slide 16 para falar rapidamente da corretude.
-Slide 17 - Conclusoes
-Se baseie no trabalho
-
-
-
-
-
-
-
-
+Considere os campos Data como Date, os campos com coisas relacionadas a Tax ou Ammount como decimais/float e o resto como tipos complexos ou strings, ok?
